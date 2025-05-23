@@ -6,9 +6,10 @@ Created on Thu May 22 17:35:43 2025
 """
 
 import math
-#import networkx as nx
-#import matplotlib.pyplot as plt
+import networkx as nx
+import matplotlib.pyplot as plt
 
+from dataclasses import dataclass, field
 
 
 class BinaryTree:
@@ -96,14 +97,49 @@ class BinaryTree:
     
     
     def visualise(self):
-        """Visualise the binary tree using networkx + matplotlib."""
-        print("Visualise is not implimented.")
-        pass
+        """Visualise the binary tree using networkx + matplotlib. Root is centered."""
         if self.length == 0:
             print("Tree is empty.")
             return
-    
-        #G = nx.DiGraph()
+
+        G = nx.DiGraph()
+        labels = {}
+
+        # Add nodes and edges
+        for i in range(1, self.length + 1):
+            G.add_node(i)
+            labels[i] = str(self.arr[i])
+            left = self.left(i)
+            right = self.right(i)
+            if left <= self.length:
+                G.add_edge(i, left)
+            if right <= self.length:
+                G.add_edge(i, right)
+
+        # Compute positions for a tree layout with root centered
+        def hierarchy_pos(G, root=1, width=1., vert_gap=0.2, vert_loc=0, xcenter=0.5, pos=None, parent=None):
+            if pos is None:
+                pos = {root: (xcenter, vert_loc)}
+            else:
+                pos[root] = (xcenter, vert_loc)
+            children = list(G.successors(root))
+            if len(children) != 0:
+                dx = width / len(children)
+                nextx = xcenter - width/2 + dx/2
+                for child in children:
+                    pos = hierarchy_pos(G, child, width=dx, vert_gap=vert_gap,
+                                        vert_loc=vert_loc - vert_gap, xcenter=nextx, pos=pos, parent=root)
+                    nextx += dx
+            return pos
+
+        pos = hierarchy_pos(G, root=1, width=1.0, xcenter=0.5)
+
+        plt.figure(figsize=(8, 5))
+        nx.draw(G, pos, with_labels=False, arrows=False, node_size=1200, node_color="#90caf9")
+        nx.draw_networkx_labels(G, pos, labels, font_size=12, font_color="black")
+        plt.title("Binary Tree Visualisation")
+        plt.axis('off')
+        plt.show()
 
 
 
@@ -136,7 +172,7 @@ class Heap(BinaryTree):
              self.build_heap(values)
     
     # TODO: For deep trees make iterative
-    def heapify(self, i):
+    def heapify(self, i) -> None:
         """Maintain the max heap property at index i. Runtime: O(lg n)."""
         l = self.left(i)
         r = self.right(i)
@@ -157,7 +193,7 @@ class Heap(BinaryTree):
             self.arr[i], self.arr[best] = self.arr[best], self.arr[i]
             self.heapify(best)   # Recursion
 
-    def build_heap(self, A: list):
+    def build_heap(self, A: list) -> None:
         """Produce a max-heap from an unordered input array. Runtime: O(n)."""
         if not isinstance(A, BinaryTree):
             self.use(A)
@@ -171,7 +207,7 @@ class Heap(BinaryTree):
             self.heapify(i)
     
     # TODO: Currently modifies list in place. Add toggle for copy, so heap property remains after call
-    def heapsort(self, asc=True, arr=None):
+    def heapsort(self, asc=True, arr=None) -> None:
         """
         Sorts an array.
         
@@ -190,6 +226,35 @@ class Heap(BinaryTree):
             self.heapify(1)
 
 # TODO: BST and RBT. Prerequisite is making node class. Use @dataclass
+
+@dataclass
+class TreeNode:
+    key: int
+    left: "TreeNode" = None
+    right: "TreeNode" = None
+    parent: "TreeNode" = None
+    colour: str = field(default='red')  # RBT
+
+    def __repr__(self) -> str:
+        return f"TreeNode({self.key})"
+
+
+class BST:
+    def __init__(self):
+        self.root = None
+
+    def insert(self, key):
+        pass
+
+    def inorder_walk(self):
+        pass
+
+    def search(self, key, node=None):
+        pass
+
+
+class RBT:
+    pass
 
 if __name__ == '__main__':
     test_input = [4, 1, 3, 2, 16, 9, 10, 14, 8, 7]
