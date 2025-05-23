@@ -108,7 +108,7 @@ class BinaryTree:
         # Add nodes and edges
         for i in range(1, self.length + 1):
             G.add_node(i)
-            labels[i] = str(self.arr[i])
+            labels[i] = str(self[i])
             left = self.left(i)
             right = self.right(i)
             if left <= self.length:
@@ -183,14 +183,14 @@ class Heap(BinaryTree):
         best = i
 
         # Find best
-        if l <= self.heap_size and compare(self.arr[l], self.arr[i]):
+        if l <= self.heap_size and compare(self[l], self[i]):
             best = l
-        if r <= self.heap_size and compare(self.arr[r], self.arr[best]):
+        if r <= self.heap_size and compare(self[r], self[best]):
             best = r
 
         if best != i:
             # Swap
-            self.arr[i], self.arr[best] = self.arr[best], self.arr[i]
+            self[i], self[best] = self[best], self[i]
             self.heapify(best)   # Recursion
 
     def build_heap(self, A: list) -> None:
@@ -221,7 +221,7 @@ class Heap(BinaryTree):
         self.build_heap(self.arr if arr is None else arr)
 
         for i in range(self.length, 1, -1): # Order matters!
-            self.arr[1], self.arr[i] = self.arr[i], self.arr[1] # Decreasing heap-size = focus on the tree representation of the subarray A[1..heap-size]
+            self[1], self[i] = self[i], self[1] # Decreasing heap-size = focus on the tree representation of the subarray A[1..heap-size]
             self.heap_size -= 1
             self.heapify(1)
 
@@ -269,7 +269,7 @@ class BST:
             node = node.right
         return node
 
-    def insert(self, value: TreeNode|any):
+    def insert(self, value):
         node = TreeNode.convert(value)
 
         parent = None    # Parent
@@ -288,7 +288,7 @@ class BST:
         else:
             parent.right = node
 
-    def delete(self, value: TreeNode|any):
+    def delete(self, value):
         def transplant(self, u: TreeNode, v: TreeNode):
             # Node u’s parent ends up having v as its appropriate child
             if u.parent is None:
@@ -351,7 +351,7 @@ class BST:
 
     def search(self, key: any, node: TreeNode = None):
         while node is not None and key != node.key:
-            key = node.left if key < node.key else node.right
+            node = node.left if key < node.key else node.right
         return node
 
 
@@ -376,7 +376,10 @@ class RBT(BST):
     def __init__(self):
         self.root: RBTreeNode = None
 
+    def left_rotate(self, value):       # 44
+        node = RBTreeNode.convert(value)
 
+        pass
 
 
 def test_heap():
