@@ -9,6 +9,7 @@ import math
 import networkx as nx
 import matplotlib.pyplot as plt
 
+from typing import Any, Self
 from dataclasses import dataclass, field
 
 
@@ -225,44 +226,55 @@ class Heap(BinaryTree):
             self.heap_size -= 1
             self.heapify(1)
 
-# TODO: BST and RBT. Prerequisite is making node class. Use @dataclass
-
 @dataclass
 class TreeNode:
-    key: any
-    left: "TreeNode" = None
-    right: "TreeNode" = None
-    parent: "TreeNode" = None
+    key: Any
+    left: Self = None
+    right: Self = None
+    parent: Self = None
 
     def __repr__(self) -> str:
         return f"TreeNode({self.key})"
 
-    def convert(value):
-        return value if isinstance(value, TreeNode) else TreeNode(value)
+    @classmethod
+    def ensure_node(cls, value):
+        return value if isinstance(value, cls) else cls(value)
 
 @dataclass
 class RBTreeNode(TreeNode):
-    colour: str = field(default='red')
+    # Dont init as None, as it uses Seperate null node
+    left: Self = None
+    right: Self = None
+    parent: Self = None
+    is_red: bool = True     # is_red. Bool, because only two options -> smaller + faster (minimally)
 
-    def convert(value):     # Override
-        return value if isinstance(value, RBTreeNode) else RBTreeNode(value)
+    def __repr__(self):
+        colour = "R" if self.is_red else "B"
+        return f"RBTreeNode({self.key}, {colour})"
 
 class BST:
     def __init__(self, value):
         self.root: TreeNode = None
+        # TODO: Add height
 
     @property
-    def isBST(self):        # TODO: Make a check for testing
-        pass
+    def isBST(self) -> bool:
+        def _isBST(node, low, high):
+            if node is None:
+                return True
+            if (low is not None and node.key <= low) or (high is not None and node.key >= high):
+                return False
+            return _isBST(node.left, low, node.key) and _isBST(node.right, node.key, high)
 
-    @property
+        return _isBST(self.root, None, None)
+
+
     def minimum(self, x: TreeNode) -> TreeNode:
         node = self.root if x is None else x
         while node.left is not None:
             node = node.left
         return node
 
-    @property
     def maximum(self, x: TreeNode) -> TreeNode:
         node = self.root if x is None else x
         while node.right is not None:
@@ -270,7 +282,7 @@ class BST:
         return node
 
     def insert(self, value):
-        node = TreeNode.convert(value)
+        node = TreeNode.ensure_node(value)
 
         parent = None    # Parent
         curr = self.root
@@ -288,40 +300,42 @@ class BST:
         else:
             parent.right = node
 
-    def delete(self, value):
-        def transplant(self, u: TreeNode, v: TreeNode):
-            # Node u’s parent ends up having v as its appropriate child
-            if u.parent is None:
-                self.root = v
-            elif u is u.parent.left:
-                u.parent.left = v
-            else:
-                u.parent.right = v
+    def _transplant(self, u: TreeNode, v: TreeNode):
+        """Node u's parent ends up having v as its appropriate child."""
 
-            #Node u’s parent becomes node v’s parent
-            if v is not None:
-                v.parent = u.parent
+        # I can't be bothered to overwrite...
+        none_comp = None if not isinstance(self, RBT) else self.null
 
-        node = TreeNode.convert(value)  # Typeing
+        if u.parent is None:
+            self.root = v
+        elif u is u.parent.left:
+            u.parent.left = v
+        else:
+            u.parent.right = v
 
+        #Node u’s parent becomes node v’s parent
+        if v is not None:
+            v.parent = u.parent
+
+    def delete(self, node: TreeNode):
         # Case 1:
         if node.left is None:
-            transplant(node, node.right)
+            self._transplant(node, node.right)
 
         # Case 2
         elif node.right is None:
-            transplant(node, node.left)
+            self._transplant(node, node.left)
 
         # Case 3
         else:
             y = self.minimum(node.right)
             # Case D.1
             if y.parent is not node:        # Assume the case when y.parent = node
-                transplant(y, y.right)
+                self._transplant(y, y.right)
                 y.right = node.right
                 y.right.parent = y
             # Case D.2
-            transplant(node, y)
+            self._transplant(node, y)
             y.left = node.left
             y.left.parent = y
 
@@ -343,13 +357,14 @@ class BST:
             pre = pre.parent
         return pre
 
+    # TODO: Make __iter__ (using yield as enumerable?)
     def inorder_walk(self, node: TreeNode, asc: bool = True):
         if node is not None:
-            self.inorder_walk(node.left if asc else node.right)
+            self.inorder_walk(node.left if asc else node.right, asc)
             print(node)
-            self.inorder_walk(node.right if asc else node.left)
+            self.inorder_walk(node.right if asc else node.left, asc)
 
-    def search(self, key: any, node: TreeNode = None):
+    def search(self, key: Any, node: TreeNode):
         while node is not None and key != node.key:
             node = node.left if key < node.key else node.right
         return node
@@ -374,12 +389,216 @@ class RBT(BST):
     """
 
     def __init__(self):
-        self.root: RBTreeNode = None
+        self.null: RBTreeNode = RBTreeNode(None, None, None, None, False)
+        self.root: RBTreeNode = self.null
+        # TODO: add height (RB)
 
-    def left_rotate(self, value):       # 44
-        node = RBTreeNode.convert(value)
+    def _left_rotate(self, value):       # 44
+        node = RBTreeNode.ensure_node(value)
 
-        pass
+        y = node.right
+
+        # Turn y’s left subtree (i.e., beta) into node's right subtree
+        node.right = y.left
+        if y.left is not self.null:
+            y.left.parent = node
+
+        # Link node's parent to y
+        y.parent = node.parent
+        if node.parent is self.null:
+            self.root = y
+        elif node is node.parent.left:
+            node.parent.left = y
+        else:
+            node.parent.right = y
+
+        # Put node on y's left
+        y.left = node
+        node.parent = y
+
+    def _right_rotate(self, value):
+        node = RBTreeNode.ensure_node(value)
+
+        y = node.left
+        node.left = y.right
+        if y.right is not self.null:
+            y.right.parent = node
+
+        y.parent = node.parent
+        if node.parent is self.null:
+            self.root = y
+        elif node is node.parent.right:
+            node.parent.right = y
+        else:
+            node.parent.left = y
+        y.right = node
+        node.parent = y
+
+    def insert(self, value):
+        # First part same as normal insert
+        node = RBTreeNode.ensure_node(value)
+
+        parent = self.null
+        curr = self.root
+
+        while curr is not self.null:
+            parent = curr
+            curr = curr.left if node.key < curr.key else curr.right
+
+        node.parent = parent
+
+        if parent is self.null:
+            self.root = node
+        elif node.key < parent.key:
+            parent.left = node
+        else:
+            parent.right = node
+
+        # Set node as red, and set children
+        node.left = self.null
+        node.right = self.null
+        node.is_red = True
+        self._restore_insert(node)     # Prop 2 or 4 may be violated
+
+    def _restore_insert(self, node: RBTreeNode):
+        """
+        Restore RB property.
+
+        Assume all passed vals are RBTree instances
+
+        Loop Invariant:
+        1. Node is red
+        2. If parent is the root, then parent is black
+        3. If the tree violates any of the RB properties, then
+            - Either it violates Prop. 2 (because is the root), or
+            - It violates Prop. 4 (because parent is also red)
+        """
+
+        # The loop moves the violation up in the tree, preserving the invariant
+        while node.parent.is_red:
+            # Two symmetric procedures respectively if node’s parent is a left child or a right child
+            # Each are subdivided in 3 cases (where in particular Case 2 redirects to Case 3)
+            if node.parent is node.parent.parent.left:
+                y = node.parent.parent.right
+
+                # Case 1
+                if y.is_red:
+                    node.parent.is_red = False
+                    y.is_red = False
+                    node.parent.parent.is_red = True
+                    node = node.parent.parent
+                else:
+                    if node is node.parent.right:
+                        node = node.parent
+                        self._left_rotate(node)
+                    node.parent.is_red = False
+                    node.parent.parent.is_red = True
+                    self._right_rotate(node.parent.parent)
+
+            else:   # Identical to then, but l and r are swapped
+                y = node.parent.parent.left
+
+                # Case 1
+                if y.is_red:
+                    node.parent.is_red = False
+                    y.is_red = False
+                    node.parent.parent.is_red = True
+                    node = node.parent.parent
+                else:
+                    if node is node.parent.left:
+                        node = node.parent
+                        self._right_rotate(node)
+                    node.parent.is_red = False
+                    node.parent.parent.is_red = True
+                    self._left_rotate(node.parent.parent)
+
+
+    def delete(self, node: RBTreeNode):
+
+        y = node
+        y_org_col = y.is_red
+
+        if node.left is self.null:
+            x = node.right
+            self._transplant(node, node.right)
+
+
+        elif node.right is self.null:
+            x = node.left
+            self._transplant(node, node.left)
+
+
+        else:
+            y = self.minimum(node.right)
+            y_org_col = y.is_red
+            x = y.right
+
+            if y.parent is node:
+                x.parent = y
+            else:
+                self._transplant(y, y.right)
+                y.right = node.right
+                y.right.parent = y
+
+            self._transplant(node, y)
+            y.left = node.left
+            y.left.parent = y
+            y.is_red = node.is_red
+
+        if not y_org_col:       # If black
+            self._restore_delete(x)
+
+    # TODO: Comment
+    def _restore_delete(self, node: RBTreeNode):
+        """
+        Start from and move the extra black token up the tree until:
+        - node points to a red-and-black node, in which case it is coloured black
+        - node points to the root, in which case, colour node black; or
+        - Having performed suitable rotations and recolouring, the loop exits
+        """
+
+        while node is not self.null and not node.is_red:
+            if node is node.parent.left:
+                w = node.parent.right
+                if w.is_red:
+                    w.is_red = False
+                    node.parent.is_red = True
+                    self._left_rotate(node.parent)
+                    w = node.parent.right
+                if not w.left.is_red and not w.right.is_red:
+                    w.is_red = True
+                else:
+                    if not w.right.is_red:
+                        w.left.is_red = False
+                        w.is_red = True
+                        self._right_rotate(w)
+                        w = node.parent.right
+                    w.is_red = node.parent.is_red
+                    node.parent.is_red = False
+                    w.right.is_red = False
+                    self._left_rotate(node.parent)
+                    node = self.root
+            else:
+                w = node.parent.left
+                if w.is_red:
+                    w.is_red = False
+                    node.parent.is_red = True
+                    self._right_rotate(node.parent)
+                    w = node.parent.left
+                if not w.right.is_red and not w.left.is_red:
+                    w.is_red = True
+                else:
+                    if not w.left.is_red:
+                        w.right.is_red = False
+                        w.is_red = True
+                        self._left_rotate(w)
+                        w = node.parent.left
+                    w.is_red = node.parent.is_red
+                    node.parent.is_red = False
+                    w.left.is_red = False
+                    self._right_rotate(node.parent)
+                    node = self.root
+        node.is_red = False
 
 
 def test_heap():
@@ -411,3 +630,9 @@ if __name__ == '__main__':
     test_heap()
 
     print('Fin')
+
+# TODO Add safe defaults to RBTreeNode using field(...)
+# TODO Redesign ensure_node() to integrate self.null
+# TODO Fix potential is_red access on null in _restore_delete
+# TODO Implement minimum() or inherit safely
+# TODO Consider replacing ensure_node() with a create() that requires null param
