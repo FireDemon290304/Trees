@@ -229,7 +229,7 @@ class Heap(BinaryTree):
 
 @dataclass
 class TreeNode:
-    key: int
+    key: any
     left: "TreeNode" = None
     right: "TreeNode" = None
     parent: "TreeNode" = None
@@ -237,25 +237,147 @@ class TreeNode:
     def __repr__(self) -> str:
         return f"TreeNode({self.key})"
 
+    def convert(value):
+        return value if isinstance(value, TreeNode) else TreeNode(value)
+
 @dataclass
 class RBTreeNode(TreeNode):
     colour: str = field(default='red')
 
+    def convert(value):     # Override
+        return value if isinstance(value, RBTreeNode) else RBTreeNode(value)
+
 class BST:
+    def __init__(self, value):
+        self.root: TreeNode = None
+
+    @property
+    def isBST(self):        # TODO: Make a check for testing
+        pass
+
+    @property
+    def minimum(self, x: TreeNode) -> TreeNode:
+        node = self.root if x is None else x
+        while node.left is not None:
+            node = node.left
+        return node
+
+    @property
+    def maximum(self, x: TreeNode) -> TreeNode:
+        node = self.root if x is None else x
+        while node.right is not None:
+            node = node.right
+        return node
+
+    def insert(self, value: TreeNode|any):
+        node = TreeNode.convert(value)
+
+        parent = None    # Parent
+        curr = self.root
+
+        while curr is not None:         # Move curr and parent down the tree, comparing with node
+            parent = curr
+            curr = curr.left if node.key < curr.key else curr.right
+
+        node.parent = parent            # Here, curr is null, and node replaces it
+
+        if parent is None:              # Case 1: Tree is empty
+            self.root = node
+        elif node.key < parent.key:     # Case 2: Place node appropriately in either left or right subtree of the parent, keeping BST property
+            parent.left = node
+        else:
+            parent.right = node
+
+    def delete(self, value: TreeNode|any):
+        def transplant(self, u: TreeNode, v: TreeNode):
+            # Node u’s parent ends up having v as its appropriate child
+            if u.parent is None:
+                self.root = v
+            elif u is u.parent.left:
+                u.parent.left = v
+            else:
+                u.parent.right = v
+
+            #Node u’s parent becomes node v’s parent
+            if v is not None:
+                v.parent = u.parent
+
+        node = TreeNode.convert(value)  # Typeing
+
+        # Case 1:
+        if node.left is None:
+            transplant(node, node.right)
+
+        # Case 2
+        elif node.right is None:
+            transplant(node, node.left)
+
+        # Case 3
+        else:
+            y = self.minimum(node.right)
+            # Case D.1
+            if y.parent is not node:        # Assume the case when y.parent = node
+                transplant(y, y.right)
+                y.right = node.right
+                y.right.parent = y
+            # Case D.2
+            transplant(node, y)
+            y.left = node.left
+            y.left.parent = y
+
+    def successor(self, node: TreeNode):
+        if node.right is not None:
+            return self.minimum(node.right)
+        suc = node.parent
+        while suc is not None and node is suc.right:
+            node = suc
+            suc = suc.parent
+        return suc
+
+    def predecessor(self, node: TreeNode):
+        if node.left is not None:
+            return self.maximum(node.left)
+        pre = node.parent
+        while pre is not None and node is pre.left:
+            node = pre
+            pre = pre.parent
+        return pre
+
+    def inorder_walk(self, node: TreeNode, asc: bool = True):
+        if node is not None:
+            self.inorder_walk(node.left if asc else node.right)
+            print(node)
+            self.inorder_walk(node.right if asc else node.left)
+
+    def search(self, key: any, node: TreeNode = None):
+        while node is not None and key != node.key:
+            key = node.left if key < node.key else node.right
+        return node
+
+
+class RBT(BST):
+    """
+    Simple Red-Black binary search tree.
+
+    A red-black tree is a BST that additionally satisfies the following red-black properties:
+    1. Every node is either red or black
+    2. The root is black
+    3. Every leaf (Nil) is black
+    4. If a node is red, then both its children are black
+    5. For each node, all simple paths from the node to descendant leaves contain the same number of black nodes.
+
+    Uses the same single null node for null values to make them black.
+
+    Contains rotations, that preserve BTS property, but not nessesarily the RB property.
+
+    Lemma 13.1: A red-black tree with n internal nodes has height at most 2 lg(n + 1)
+    """
+
     def __init__(self):
-        self.root = None
+        self.root: RBTreeNode = None
 
-    def insert(self, key):
-        pass
 
-    def inorder_walk(self):
-        pass
 
-    def search(self, key, node=None):
-        pass
-
-class RBT:
-    pass
 
 def test_heap():
     test_inputs = [
