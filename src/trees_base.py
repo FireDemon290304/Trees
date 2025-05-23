@@ -252,23 +252,35 @@ class BST:
     def search(self, key, node=None):
         pass
 
-
 class RBT:
     pass
 
+def test_heap():
+    test_inputs = [
+        [4, 1, 3, 2, 16, 9, 10, 14, 8, 7],         # Original test
+        [1],                                        # Single element
+        [],                                         # Empty input
+        [5, 4, 3, 2, 1],                            # Descending order
+        [1, 2, 3, 4, 5],                            # Ascending order
+        [7, 7, 7, 7, 7, 7, 7],                      # All elements the same
+        [10, -1, 2, 8, 0, 5, 3],                    # Includes negative and zero
+        [100, 50, 200, 25, 75, 150, 300],           # Larger numbers, BST-like
+    ]
+
+    for idx, test_input in enumerate(test_inputs, 1):
+        print(f"\nTest case {idx}: {test_input}")
+        heap = Heap(True, test_input)
+        print("Heap (max-heap):", heap)
+        heap.visualise()
+
+def test_search_trees():
+    # TODO BS
+    # TODO RB
+    pass
+
 if __name__ == '__main__':
-    test_input = [4, 1, 3, 2, 16, 9, 10, 14, 8, 7]
-    
-    print(test_input)
-    
-    heap = Heap(True, test_input)
-    print(heap)
-    
-    #heap.heapsort(True, test_input)
-    #print(heap)
-    #heap.heapsort(False, test_input)
-    #print(heap)
-    
-    heap.visualise()
+    print('Starting...')
 
+    test_heap()
 
+    print('Fin')
